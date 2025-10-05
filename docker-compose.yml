@@ -1,25 +1,46 @@
 services:
-  postgres:
+
+  postgres-auth:
     image: postgres:15
+    container_name: postgres-auth
+    restart: always
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: auth_db
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
-      - pgdata:/var/lib/postgresql/data
+      - auth_pgdata:/var/lib/postgresql/data
+
+
+  postgres-topic:
+    image: postgres:15
+    container_name: postgres-topic
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: topic_db
+    ports:
+      - "5434:5432"
+    volumes:
+      - topic_pgdata:/var/lib/postgresql/data
 
   rabbitmq:
     image: rabbitmq:3-management
+    container_name: rabbitmq
+    restart: always
     ports:
       - "5672:5672"
       - "15672:15672"
 
   auth-service:
     build: ./services/auth-service
+    container_name: auth-service
+    restart: always
     environment:
-      DB_HOST: postgres
+      DB_HOST: postgres-auth
       DB_PORT: 5432
       DB_USER: postgres
       DB_PASS: postgres
@@ -29,10 +50,29 @@ services:
       RABBITMQ_QUEUE: auth_queue
       PORT: 3000
     depends_on:
-      - postgres
+      - postgres-auth
       - rabbitmq
     ports:
       - "3000:3000"
 
+  topic-service:
+    build: ./services/topic-service
+    container_name: topic-service
+    restart: always
+    environment:
+      DB_HOST: postgres-topic
+      DB_PORT: 5432
+      DB_USER: postgres
+      DB_PASS: postgres
+      DB_NAME: topic_db
+      RABBITMQ_URL: amqp://rabbitmq:5672
+      RABBITMQ_QUEUE: topic_queue
+    depends_on:
+      - postgres-topic
+      - rabbitmq
+    ports:
+      - "3001:3001"
+
 volumes:
-  pgdata:
+  auth_pgdata:
+  topic_pgdata:
