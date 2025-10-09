@@ -27,6 +27,19 @@ services:
     volumes:
       - topic_pgdata:/var/lib/postgresql/data
 
+  postgres-test:
+    image: postgres:15
+    container_name: postgres-test
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: test_db
+    ports:
+      - "5435:5432"
+    volumes:
+      - test_pgdata:/var/lib/postgresql/data
+
   rabbitmq:
     image: rabbitmq:3-management
     container_name: rabbitmq
@@ -73,6 +86,26 @@ services:
     ports:
       - "3001:3001"
 
+  test-service:
+    build: ./services/test-service
+    container_name: test-service
+    restart: always
+    environment:
+      DB_HOST: postgres-test
+      DB_PORT: 5432
+      DB_USER: postgres
+      DB_PASS: postgres
+      DB_NAME: test_db
+      RABBITMQ_URL: amqp://rabbitmq:5672
+      RABBITMQ_QUEUE: test_queue
+      PORT: 3002  
+    depends_on:
+      - postgres-test
+      - rabbitmq
+    ports:
+      - "3002:3002" 
+
 volumes:
   auth_pgdata:
   topic_pgdata:
+  test_pgdata:

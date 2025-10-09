@@ -1,7 +1,6 @@
 FROM node:20-alpine AS builder
 
 WORKDIR /app
-RUN apk add --no-cache python3 make g++
 COPY package.json yarn.lock ./
 RUN yarn install
 COPY . .
@@ -11,13 +10,11 @@ RUN yarn build
 FROM node:20-alpine
 
 WORKDIR /app
-RUN apk add --no-cache python3 make g++
 COPY package.json yarn.lock ./
-RUN yarn install --production && yarn cache clean
-COPY --from=builder /app/dist ./dist
-RUN addgroup -g 1001 -S nodejs
-RUN adduser -S nestjs -u 1001
-USER nestjs
+RUN yarn install --production
 
-EXPOSE 3000
+
+COPY --from=builder /app/dist ./dist
+
+EXPOSE 3002
 CMD ["node", "dist/main.js"]
